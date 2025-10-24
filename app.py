@@ -3,6 +3,7 @@ from utils.state import init_state
 from utils.io import load_csv_semicolon, maybe_read_parquet, write_parquet
 from utils.prep import clean, filter_values
 from pathlib import Path
+import constants
 
 st.set_page_config(
     page_title="TGV Punctuality Dashboard",
@@ -19,8 +20,8 @@ init_state()
 
 # --- Load data once and store in session (cleaned)
 if "df_clean" not in st.session_state:
-    DATA_CSV = st.secrets.get("DATA_CSV", "data/tgv_punctualite.csv")
-    PARQUET = "data/tgv_punctualite_clean.parquet"
+    DATA_CSV = st.secrets.get("DATA_CSV", f"data/{constants.DATA_FILENAME.replace('.csv', '')}.csv") 
+    PARQUET = f"data/{constants.CLEANED_PARQUET_FILENAME}"
 
     dfp = maybe_read_parquet(PARQUET)
     if dfp is None:

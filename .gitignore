@@ -14,5 +14,6 @@ __pycache__/
 
 # Streamlit & Data
 data/*.parquet
+data/regularite-mensuelle-tgv-aqst.csv
 data/tgv_punctualite_clean.parquet
 .streamlit/
