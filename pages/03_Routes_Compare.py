@@ -83,9 +83,9 @@ if not top_df.empty and not bottom_df.empty:
     fig_top, fig_bottom = bar_ranking(top_df, bottom_df, metric)
     c1, c2 = st.columns(2)
     with c1:
-        st.plotly_chart(fig_top, width="stretch")
+        st.plotly_chart(fig_top, use_container_width=True)
     with c2:
-        st.plotly_chart(fig_bottom, width="stretch")
+        st.plotly_chart(fig_bottom, use_container_width=True)
 else:
     st.warning("Not enough data to compute rankings.")
 
@@ -173,7 +173,7 @@ summ = liaison_summary(dff, treat_bidirectional=treat_bi)
 if not summ.empty:
     fig_scatter = scatter_performance(summ, color_by=color_by, x_ref=90.0, y_ref=30.0)
     if fig_scatter:
-        st.plotly_chart(fig_scatter, width="stretch")
+        st.plotly_chart(fig_scatter, use_container_width=True)
     else:
         st.info("Not enough data to plot the scatter.")
 else:
@@ -298,7 +298,7 @@ st.caption("How late arrivals distribute across liaisons. A bowed curve ⇒ **fe
 if not summ.empty:
     fig_lorenz = lorenz_late_share(summ)
     if fig_lorenz:
-        st.plotly_chart(fig_lorenz, width="stretch")
+        st.plotly_chart(fig_lorenz, use_container_width=True)
     else:
         st.info("No late-arrival concentration could be computed.")
 else:
@@ -362,7 +362,7 @@ st.caption("Boxplots by **duration class** quantify severity and outliers.")
 
 dd = delay_distribution(dff)
 if not dd.empty:
-    st.plotly_chart(box_delay_distribution(dd), width="stretch")
+    st.plotly_chart(box_delay_distribution(dd), use_container_width=True)
 else:
     st.info("No delay data to display.")
 

@@ -215,7 +215,7 @@ else:
         ref_line=ref,
         annotate_extrema=True,
     )
-    st.plotly_chart(fig1, width="stretch")
+    st.plotly_chart(fig1, use_container_width=True)
 
 # --- Rich time-series callout (enhanced phrasing) ---
 if not ms.empty and y_col in ms:
@@ -293,7 +293,7 @@ st.caption("Short, medium, and long journeys can behave differently: compare tre
 # Chart
 if not ds.empty:
     fig2 = line_duration(ds, title="On-time arrival % by duration class")
-    st.plotly_chart(fig2, width="stretch")
+    st.plotly_chart(fig2, use_container_width=True)
 else:
     st.info("Not enough data in the current scope to compare duration classes.")
 

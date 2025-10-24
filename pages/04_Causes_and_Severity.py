@@ -109,7 +109,7 @@ else:
     horizontal = (breakdown == "Liaison")
     fig_c = stacked_causes(comp, title=f"Delay causes composition by {breakdown.lower()}", horizontal=horizontal)
     if fig_c:
-        st.plotly_chart(fig_c, width="stretch")
+        st.plotly_chart(fig_c, use_container_width=True)
 
 try:
     # last-12m vs prior-12m 
@@ -161,7 +161,7 @@ if pivot.empty:
 else:
     fig_hm = heatmap_causes_month(pivot, title="Cause mix over time")
     if fig_hm:
-        st.plotly_chart(fig_hm, width="stretch")
+        st.plotly_chart(fig_hm, use_container_width=True)
 
 try:
     if not pivot.empty:
@@ -207,13 +207,13 @@ with c1:
         st.info("No service-level cause composition.")
     else:
         st.plotly_chart(stacked_100_by_attr(comp_service, "Cause composition by service", horizontal=True),
-                        width="stretch")
+                        use_container_width=True)
 with c2:
     if comp_duration.empty:
         st.info("No duration-class cause composition.")
     else:
         st.plotly_chart(stacked_100_by_attr(comp_duration, "Cause composition by duration class", horizontal=True),
-                        width="stretch")
+                        use_container_width=True)
 
 try:
     # Build quick contrasts on External / Rolling stock between >3h and <1h30
@@ -260,7 +260,7 @@ if sev_profile.empty:
     st.info("No severity-by-cause profile available.")
 else:
     st.plotly_chart(grouped_severity_by_cause(sev_profile, "Severity profile by cause"),
-                    width="stretch")
+                    use_container_width=True)
 
 try:
     if not sev_profile.empty and {"bucket","cause","pct"}.issubset(sev_profile.columns):
@@ -301,7 +301,7 @@ else:
     horizontal = (breakdown == "Liaison")
     fig_s = grouped_severity(sev, title=f"Severe delays {bucket} by {breakdown.lower()}", horizontal=horizontal)
     if fig_s:
-        st.plotly_chart(fig_s, width="stretch")
+        st.plotly_chart(fig_s, use_container_width=True)
 
 try:
     if not sev.empty and "group" in sev and "count" in sev:
@@ -349,7 +349,7 @@ if dom.empty:
 else:
     fig_dom = scatter_dominant_cause(dom, title="On-time vs. severity by dominant cause")
     if fig_dom:
-        st.plotly_chart(fig_dom, width="stretch")
+        st.plotly_chart(fig_dom, use_container_width=True)
 
 try:
     if dom is not None and not dom.empty:

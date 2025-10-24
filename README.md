@@ -1,11 +1,11 @@
-# TGV Punctuality Dashboard
+# TGV Punctuality Dashboard 🚄📊
 
 A Streamlit dashboard for analyzing TGV punctuality, causes of delay, and severity, based on open data from SNCF.
 
 ## 🚀 Quick Setup & Run
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.10+
 - `make` (standard on macOS/Linux)
 
 ### 1. Setup
@@ -22,7 +22,7 @@ make run
 ```
 The application will be available at `http://localhost:8501`.
 
-## Makefile Commands
+## 🛠 Makefile Commands
 This project uses a `Makefile` to simplify common tasks:
 * `make setup`: Runs `install` and `data`. The primary command for first-time users.
 * `make install`: Creates the `venv` (if missing) and installs Python packages.
@@ -30,7 +30,7 @@ This project uses a `Makefile` to simplify common tasks:
 * `make run`: Starts the Streamlit server.
 * `make clean`: Removes the `venv`, downloaded data (`.csv`), and data cache (`.parquet`).
 
-## Project Structure
+## 📁 Project Structure
 ```
 .
 ├── Makefile          # Main commands (setup, run, clean)
