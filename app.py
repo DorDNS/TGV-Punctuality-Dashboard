@@ -20,7 +20,7 @@ init_state()
 
 # --- Load data once and store in session (cleaned)
 if "df_clean" not in st.session_state:
-    DATA_CSV = st.secrets.get("DATA_CSV", f"data/{constants.DATA_FILENAME.replace('.csv', '')}.csv") 
+    DATA_CSV = f"data/{constants.DATA_FILENAME}"
     PARQUET = f"data/{constants.CLEANED_PARQUET_FILENAME}"
 
     dfp = maybe_read_parquet(PARQUET)

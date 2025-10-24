@@ -2,10 +2,6 @@
 
 A Streamlit dashboard for analyzing TGV punctuality, causes of delay, and severity, based on open data from SNCF.
 
-This project is structured for full reproducibility using a `Makefile` and a virtual environment.
-
----
-
 ## 🚀 Quick Setup & Run
 
 ### Prerequisites
