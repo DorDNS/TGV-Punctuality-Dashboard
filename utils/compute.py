@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import Optional
 
 def _between_ym(df: pd.DataFrame, start_ym: str, end_ym: str) -> pd.Series:
     start = pd.to_datetime(start_ym, format="%Y-%m", errors="coerce")
@@ -134,12 +135,12 @@ def delay_distribution(df_filt: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     return df_filt[["duration_class", "avg_delay_arr_delayed_min"]].dropna()
 
-def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: int | None = None):
+def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: Optional[int] = None): # Use Optional
     """
     Weighted composition of delay causes.
     We weight each row by late_arr_count to avoid tiny samples dominating.
     breakdown = "Month" or "Liaison".
-    Returns a DataFrame in long format: [group, cause, pct]
+    Returns a DataFrame in long format: [group, cause, pct], sorted for plotting if Liaison Top N.
     """
     if df_filt.empty:
         return pd.DataFrame(columns=["group", "cause", "pct"])
@@ -166,20 +167,26 @@ def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: int | None 
         df["_group"] = df["liaison"]
 
     # --- Weighted mean per group: sum(pct * w) / sum(w)
-    # Build a weighted matrix and aggregate by group without apply()
     weighted = df[cause_cols].multiply(df["_w"], axis=0)
     num = weighted.groupby(df["_group"]).sum()
     den = df.groupby("_group")["_w"].sum().replace(0, np.nan)
-    comp = num.divide(den, axis=0)
+    comp_wide = num.divide(den, axis=0) # Renamed to comp_wide temporarily
+
+    # Store volume for sorting later if needed
+    liaison_volume = None
+    if breakdown == "Liaison":
+        liaison_volume = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
 
     # Limit to Top N liaisons by circulated volume if needed
-    if breakdown == "Liaison" and top_n is not None:
-        vol = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
-        keep = vol.index[:top_n]
-        comp = comp.loc[comp.index.intersection(keep)]
+    if breakdown == "Liaison" and top_n is not None and liaison_volume is not None:
+        keep = liaison_volume.index[:top_n]
+        comp_wide = comp_wide.loc[comp_wide.index.intersection(keep)]
+        # Ensure liaison_volume only contains the kept liaisons for sorting
+        liaison_volume = liaison_volume.loc[keep]
+
 
     # Tidy format
-    comp = comp.reset_index().rename(columns={"_group": "group"})
+    comp = comp_wide.reset_index().rename(columns={"_group": "group"})
     comp = comp.melt(id_vars="group", var_name="cause", value_name="pct")
 
     # Nicer labels
@@ -192,6 +199,17 @@ def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: int | None 
         "pct_cause_passengers": "Passengers / PSH / connections",
     }
     comp["cause"] = comp["cause"].map(label_map).fillna(comp["cause"])
+
+    # --- AJOUTÉ : Trier par volume pour l'affichage des liaisons ---
+    if breakdown == "Liaison" and liaison_volume is not None:
+        # Create a categorical type based on the volume sort order
+        # This tells Plotly how to order the y-axis
+        ordered_liaisons = liaison_volume.index.tolist()
+        comp['group'] = pd.Categorical(comp['group'], categories=ordered_liaisons, ordered=True)
+        # Sort the DataFrame itself (might help Plotly, doesn't hurt)
+        comp = comp.sort_values('group')
+    # -----------------------------------------------------------------
+
     return comp
 
 def severe_counts(df_filt: pd.DataFrame, breakdown: str, bucket: str, top_n: int | None = None):
@@ -203,21 +221,38 @@ def severe_counts(df_filt: pd.DataFrame, breakdown: str, bucket: str, top_n: int
         return pd.DataFrame(columns=["group", "count"])
 
     col_map = {"≥15": "late_over_15_count", "≥30": "late_over_30_count", "≥60": "late_over_60_count"}
-    col = col_map[bucket]
+    col = col_map.get(bucket) # Use .get() for safety
+
+    # Ensure the target column exists before proceeding
+    if not col or col not in df_filt.columns:
+        st.warning(f"Column '{col}' for severity bucket '{bucket}' not found in data. Cannot compute severe counts.")
+        return pd.DataFrame(columns=["group", "count"])
 
     df = df_filt.copy()
     if breakdown == "Month":
         df["_group"] = df["date"].dt.to_period("M").dt.to_timestamp()
-    else:
+    else: # Liaison
         df["_group"] = df["liaison"]
 
+    # Perform the aggregation
     g = df.groupby("_group")[col].sum().reset_index().rename(columns={"_group": "group", col: "count"})
 
+    # Filter for Top N based on CIRCULATED volume (as originally intended for relevance)
     if breakdown == "Liaison" and top_n is not None:
-        # same selection rule: top by circulated
-        vol = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
-        keep = list(vol.index[:top_n])
-        g = g[g["group"].isin(keep)]
+        if "circulated" in df.columns:
+            vol = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
+            keep = list(vol.index[:top_n])
+            g = g[g["group"].isin(keep)]
+        else:
+             st.warning("Cannot determine Top N liaisons by volume: 'circulated' column missing.")
+             # Fallback: maybe sort by count instead? Or just take first N alphabetically? Let's sort by count.
+             g = g.sort_values("count", ascending=False).head(top_n)
+
+
+    # --- AJOUTÉ : Trier le résultat final par 'count' décroissant ---
+    # This ensures the data passed to the plot has the highest count first
+    g = g.sort_values("count", ascending=False)
+    # -----------------------------------------------------------------
 
     return g
 

@@ -240,7 +240,7 @@ import plotly.express as px
 _CAUSE_COLORS = {
     "External": "#1f77b4",
     "Infrastructure": "#7fb3ff",
-    "Traffic": "#e45756",
+    "Traffic": "#e45756",  # Note: Votre code original utilisait 'Traffic', j'utilise ça. Si c'est 'Traffic management', ajustez ici.
     "Rolling stock": "#f1a6a5",
     "Station ops & reuse": "#2ca02c",
     "Passengers / PSH / connections": "#9be39b",
@@ -258,32 +258,37 @@ def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
     # Clamp & clean
     df_plot["pct"] = df_plot["pct"].fillna(0).clip(lower=0, upper=100)
 
+    # Utiliser le mapping de couleurs défini
+    color_map = {k: _CAUSE_COLORS.get(k, '#808080') for k in df_plot["cause"].unique()} # #808080 = gris par défaut
+
     if horizontal:
         fig = px.bar(
             df_plot,
             x="pct", y="group", color="cause",
             orientation="h", title=title, barmode="stack",
-            color_discrete_map=_CAUSE_COLORS,
+            color_discrete_map=color_map, # Utiliser le mapping ici
         )
         fig.update_xaxes(range=[0, 100], ticksuffix=" %", title=None)
         fig.update_yaxes(title=None)
+        hover_template = "<b>%{y}</b><br>%{fullData.name}: %{x:.1f}%<extra></extra>"
         text_template = "%{x:.0f}%"
     else:
         fig = px.bar(
             df_plot,
             x="group", y="pct", color="cause",
             title=title, barmode="stack",
-            color_discrete_map=_CAUSE_COLORS,
+            color_discrete_map=color_map, # Utiliser le mapping ici
         )
         fig.update_yaxes(range=[0, 100], ticksuffix=" %", title=None)
         fig.update_xaxes(title=None)
+        hover_template = "<b>%{x}</b><br>%{fullData.name}: %{y:.1f}%<extra></extra>"
         text_template = "%{y:.0f}%"
 
     fig.update_traces(
         texttemplate=text_template,
         textposition="inside",
         insidetextanchor="middle",
-        hovertemplate="<b>%{customdata}</b><br>%{label}: %{value:.1f}%",
+        hovertemplate=hover_template # Utiliser le template corrigé
     )
 
     fig.update_layout(
@@ -296,7 +301,6 @@ def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
         uniformtext_mode="hide",
     )
     return fig
-
 
 # === NEW: Grouped bars — severity share by cause ==========================
 def grouped_severity_by_cause(df_long, title: str):
