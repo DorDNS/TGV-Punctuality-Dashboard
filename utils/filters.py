@@ -20,70 +20,77 @@ def _duration_classes():
     return st.session_state.get("filters_catalog", {}).get("duration_classes", ["< 1h30", "1h30–3h", "> 3h"])
 
 def _date_range_slider(label: str):
-    # Allowed months as strings
     months_str = _date_opts()
-
-    if months_str:
-        months_dt = [pd.to_datetime(m, format="%Y-%m").date() for m in months_str]
-
-        # Helper to snap a date to nearest allowed month
-        def snap_to_month(d: date) -> date:
-            i = bisect.bisect_left(months_dt, d)
-            if i <= 0:
-                return months_dt[0]
-            if i >= len(months_dt):
-                return months_dt[-1]
-            before = months_dt[i - 1]
-            after = months_dt[i]
-            return before if abs(d - before) <= abs(after - d) else after
-
-        # Initial setup
-        if "date_range_dt" not in st.session_state:
-            start_s = st.session_state.get("date_start", months_str[0])
-            end_s = st.session_state.get("date_end", months_str[-1])
-
-            if start_s not in months_str:
-                start_s = months_str[0]
-            if end_s not in months_str:
-                end_s = months_str[-1]
-
-            init_val = (pd.to_datetime(start_s, format="%Y-%m").date(),
-                        pd.to_datetime(end_s,   format="%Y-%m").date())
-
-            st.sidebar.slider(
-                label,
-                min_value=months_dt[0],
-                max_value=months_dt[-1],
-                value=init_val,
-                format="YYYY-MM",
-                key="date_range_dt",
-            )
-        else:
-            # Create the slider without initial value
-            st.sidebar.slider(
-                label,
-                min_value=months_dt[0],
-                max_value=months_dt[-1],
-                format="YYYY-MM",
-                key="date_range_dt",
-            )
-
-        # After widget exists, snap and update string keys
-        sel = st.session_state.get("date_range_dt", (months_dt[0], months_dt[-1]))
-        if not (isinstance(sel, (list, tuple)) and len(sel) == 2):
-            sel = (months_dt[0], months_dt[-1])
-
-        start_dt = snap_to_month(sel[0])
-        end_dt = snap_to_month(sel[1])
-
-        # Update snapped values back to session state
-        st.session_state["date_start"] = pd.to_datetime(start_dt).strftime("%Y-%m")
-        st.session_state["date_end"]   = pd.to_datetime(end_dt).strftime("%Y-%m")
-
-    else:
-        # No date options available; fallback to text inputs
+    if not months_str:
         st.sidebar.text_input("Start month (YYYY-MM)", key="date_start")
         st.sidebar.text_input("End month (YYYY-MM)", key="date_end")
+        return
+
+    months_dt = [pd.to_datetime(m, format="%Y-%m").date() for m in months_str] # Use %Y-%m
+
+    min_date = months_dt[0]
+    max_date = months_dt[-1]
+
+    # Snap a date to the nearest available month start
+    def snap_to_month(d: date) -> date:
+        i = bisect.bisect_left(months_dt, d)
+        if i <= 0: return months_dt[0]
+        if i >= len(months_dt): return months_dt[-1]
+        before, after = months_dt[i - 1], months_dt[i]
+        return before if abs(d - before) <= abs(after - d) else after
+
+    # Define a unique key for the slider widget
+    slider_key = "_date_range_slider_internal_value"
+
+    # Initialize the widget's state
+    if slider_key not in st.session_state:
+        start_s = st.session_state.get("date_start", months_str[0])
+        end_s = st.session_state.get("date_end", months_str[-1])
+        try:
+            initial_start_dt = pd.to_datetime(start_s, format="%Y-%m").date()
+            if initial_start_dt not in months_dt: initial_start_dt = snap_to_month(initial_start_dt)
+        except ValueError:
+            initial_start_dt = min_date
+        try:
+            initial_end_dt = pd.to_datetime(end_s, format="%Y-%m").date()
+            if initial_end_dt not in months_dt: initial_end_dt = snap_to_month(initial_end_dt)
+        except ValueError:
+            initial_end_dt = max_date
+
+        # Ensure start <= end
+        if initial_start_dt > initial_end_dt:
+             initial_start_dt, initial_end_dt = initial_end_dt, initial_start_dt
+
+        # Set initial state for the slider's key
+        st.session_state[slider_key] = (initial_start_dt, initial_end_dt)
+
+    # Create the slider using its key - DO NOT pass 'value' after initialization
+    st.sidebar.slider(
+        label,
+        min_value=min_date,
+        max_value=max_date,
+        format="YYYY-MM",
+        key=slider_key,
+    )
+
+    # Read current value directly from widget's state key
+    current_value_dt = st.session_state.get(slider_key, (min_date, max_date))
+
+    if current_value_dt and len(current_value_dt) == 2:
+        snapped_start_dt = snap_to_month(current_value_dt[0])
+        snapped_end_dt = snap_to_month(current_value_dt[1])
+
+        current_start_s = st.session_state.get("date_start")
+        current_end_s = st.session_state.get("date_end")
+        new_start_s = pd.to_datetime(snapped_start_dt).strftime("%Y-%m")
+        new_end_s = pd.to_datetime(snapped_end_dt).strftime("%Y-%m")
+
+        if current_start_s != new_start_s or current_end_s != new_end_s:
+            st.session_state["date_start"] = new_start_s
+            st.session_state["date_end"] = new_end_s
+    else:
+        st.session_state["date_start"] = pd.to_datetime(min_date).strftime("%Y-%m")
+        st.session_state["date_end"] = pd.to_datetime(max_date).strftime("%Y-%m")
 
 def _stateful_multiselect_service(label: str):
     options = _services()
