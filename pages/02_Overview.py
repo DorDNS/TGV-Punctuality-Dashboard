@@ -11,7 +11,7 @@ from utils.compute import (
 )
 from utils.viz import line_monthly_enhanced, line_duration
 
-# ---------- Small helpers ----------
+# Helpers
 def card(icon: str, title: str, body_md: str):
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
@@ -20,14 +20,14 @@ def card(icon: str, title: str, body_md: str):
 def _tone_from_delta(delta: float | None):
     if delta is None or (isinstance(delta, float) and np.isnan(delta)):
         return "info"
-    if delta >= 0.2:   # improving
+    if delta >= 0.2:
         return "success"
-    if delta <= -0.2:  # worsening
+    if delta <= -0.2:
         return "warning"
     return "info"
 
 def callout(tone: str, icon: str, text_md: str):
-    box = getattr(st, tone, st.info)  # tone in {"info","success","warning","error"}
+    box = getattr(st, tone, st.info)
     box(f"{icon}  {text_md}")
 
 def _fmt(v, unit):
@@ -35,20 +35,19 @@ def _fmt(v, unit):
         return "—"
     return f"{v:.1f}{unit}"
 
-# ---------- Page setup ----------
+# Setup
 st.set_page_config(page_title="Overview", page_icon=":material/analytics:", layout="wide")
 overview_sidebar()
 
 st.markdown("# Overview")
 st.caption("High-level trends for the selected scope.")
 
-# ---------- Load & guardrails ----------
+# Loads
 df = st.session_state.get("df_clean", None)
 if df is None or df.empty:
     st.error("Data not loaded.")
     st.stop()
 
-# Init date range once
 if ("date_start" not in st.session_state or "date_end" not in st.session_state):
     opts = st.session_state.get("filters_catalog", {}).get("date_options", [])
     if opts:
@@ -58,7 +57,7 @@ if ("date_start" not in st.session_state or "date_end" not in st.session_state):
 # Filtered data
 dff = apply_overview_filters(df, st.session_state)
 
-# ---------- Intro card ----------
+# Intro
 card(
     icon=":material/explore:",
     title="What this page reveals",
@@ -72,9 +71,7 @@ network behaves over time** and what that implies for the deeper dive that follo
 
 st.divider()
 
-# ======================
-# HEADLINE KPI row
-# ======================
+# KPIs
 st.subheader("Key indicators")
 st.caption("Snapshot for your current selection. Adjust the **date range**, **Service**, and **Duration** filters in the sidebar.")
 
@@ -109,7 +106,7 @@ with st.popover("What do these KPIs mean?"):
         """
     )
 
-# --- Rich KPI callout (enhanced phrasing) ---
+# KPI narrative
 k_on, k_cancel, k_delay = kpis["on_time_pct"], kpis["cancel_rate_pct"], kpis["avg_arr_delay_delayed"]
 
 kpi_bits = []
@@ -167,9 +164,7 @@ they describe the service as it is experienced today before we ask how we got he
 
 st.divider()
 
-# ==========================================
-# Monthly series (driven by Primary metric)
-# ==========================================
+# Monthly time series
 metric = st.session_state.get("metric", "On-time arrival %")
 metric_map = {
     "On-time arrival %": ("on_time_pct", "Monthly on-time arrival %"),
@@ -177,10 +172,8 @@ metric_map = {
     "Cancel rate %": ("cancel_rate_pct", "Monthly cancel rate %"),
 }
 
-# Base monthly aggregation
 ms = monthly_series(dff).sort_values("date")
 
-# Weighted monthly avg for the delay metric
 if metric == "Avg arrival delay (delayed trains)":
     def _wavg(g):
         w = g["late_arr_count"].fillna(0).astype(float).sum()
@@ -201,8 +194,6 @@ st.caption(
     f"(**{metric}**). It’s the backbone of the narrative."
 )
 
-# (Removed the small grey dynamic sentence here — replaced by the colored callout below)
-
 # Chart
 if ms.empty:
     st.warning("No data for the selected filters.")
@@ -217,7 +208,7 @@ else:
     )
     st.plotly_chart(fig1, use_container_width=True)
 
-# --- Rich time-series callout (enhanced phrasing) ---
+# Time series narrative
 if not ms.empty and y_col in ms:
     s = ms.dropna(subset=[y_col]).sort_values("date")
     if not s.empty:
@@ -230,7 +221,6 @@ if not ms.empty and y_col in ms:
         prev12 = s[y_col].iloc[:-12].tail(12).mean() if len(s) >= 24 else np.nan
         delta12 = (cur12 - prev12) if (pd.notna(cur12) and pd.notna(prev12)) else np.nan
 
-        # simple volatility read (last 12 months)
         vol = s[y_col].tail(12).std(ddof=0) if len(s) >= 12 else np.nan
 
         # ref-line read for on-time %
@@ -264,7 +254,7 @@ if not ms.empty and y_col in ms:
         tone = _tone_from_delta(delta12)
         callout(":success" if tone == "success" else tone, ":material/trending_up:", " ".join(bits))
 
-# Context card (full-period read)
+# Context card
 card(
     icon=":material/bar_chart_4_bars:",
     title="Historical pattern (full period)",
@@ -280,15 +270,11 @@ points**, a nudge in the right direction despite weather and logistics headwinds
 
 st.divider()
 
-# ==========================================
-# Small multiples (by duration class)
-# ==========================================
+# Small multiples by duration class
 ds = duration_small_multiples(dff).sort_values(["duration_class", "date"])
 
 st.subheader("By duration class")
 st.caption("Short, medium, and long journeys can behave differently: compare trends side by side.")
-
-# (Removed the small grey 12-month per-class sentence — replaced by the colored callout below)
 
 # Chart
 if not ds.empty:
@@ -297,7 +283,7 @@ if not ds.empty:
 else:
     st.info("Not enough data in the current scope to compare duration classes.")
 
-# --- Rich duration callout (enhanced phrasing) ---
+# Duration class narrative
 if not ds.empty:
     # Last month snapshot
     latest_month = ds["date"].max()
@@ -349,7 +335,7 @@ if not ds.empty:
                 ":material/segment:",
                 " ".join(bits))
 
-# Context card (structural interpretation)
+# Context card
 card(
     icon=":material/hourglass_bottom:",
     title="What journey length tells us",

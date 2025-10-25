@@ -6,12 +6,6 @@ def theme():
     return {"template": "plotly_white", "height": 380}
 
 def line_monthly_enhanced(df, y_col: str, title: str, ref_line: float | None = None, annotate_extrema: bool = True):
-    """
-    Courbe mensuelle avec:
-      - suffixe unités (% si pertinent)
-      - ligne de référence optionnelle (ex: 90% pour on-time)
-      - annotations min/max optionnelles
-    """
     cfg = theme()
     fig = px.line(df, x="date", y=y_col, markers=True, title=title)
     fig.update_layout(template=cfg["template"], height=cfg["height"], legend_title_text="")
@@ -21,7 +15,7 @@ def line_monthly_enhanced(df, y_col: str, title: str, ref_line: float | None = N
         fig.update_yaxes(title=None)
     fig.update_xaxes(title=None)
 
-    # Ligne de référence (ex: 90% sur l’on-time)
+    # Ref line (target)
     if ref_line is not None:
         fig.add_hline(y=ref_line, line_dash="dot", line_width=1, opacity=0.6)
         fig.add_annotation(
@@ -30,7 +24,7 @@ def line_monthly_enhanced(df, y_col: str, title: str, ref_line: float | None = N
             showarrow=False, font=dict(size=11), xanchor="left"
         )
 
-    # Annotations min / max pour guider l’œil
+    # Annotate min/max points
     if annotate_extrema and df[y_col].notna().any():
         y_min = df.loc[df[y_col].idxmin()]
         y_max = df.loc[df[y_col].idxmax()]
@@ -73,7 +67,6 @@ def line_duration(df, title: str):
     return fig
 
 def bar_ranking(top_df, bottom_df, metric_label: str):
-    # turn index into a column named 'liaison' even if index name differs
     top_plot = top_df.reset_index().rename(columns={"index": "liaison"})
     bottom_plot = bottom_df.reset_index().rename(columns={"index": "liaison"})
 
@@ -103,7 +96,6 @@ def bar_ranking(top_df, bottom_df, metric_label: str):
 
 
 def box_delay_distribution(df):
-    """Boxplot of average delay per duration class."""
     fig = px.box(
         df,
         x="duration_class",
@@ -117,10 +109,6 @@ def box_delay_distribution(df):
     return fig
 
 def stacked_causes(df_long, title: str, horizontal: bool = False):
-    """
-    Stacked bar of cause composition (%).
-    If horizontal=True, group (liaison) on y-axis for better readability.
-    """
     if df_long.empty:
         return None
 
@@ -138,11 +126,6 @@ def stacked_causes(df_long, title: str, horizontal: bool = False):
 
 
 def grouped_severity(df_counts, title: str, horizontal: bool = False):
-    """
-    Grouped bars for severe counts.
-    When breakdown is Month, we just plot bars over time (single series).
-    When breakdown is Liaison Top N, we make a horizontal bar chart.
-    """
     if df_counts.empty:
         return None
 
@@ -159,10 +142,6 @@ def grouped_severity(df_counts, title: str, horizontal: bool = False):
     return fig
 
 def scatter_performance(df, color_by: str = "service", x_ref: float | None = 90.0, y_ref: float | None = 30.0):
-    """
-    Scatter: on_time_pct (x) vs avg_delay_arr_delayed_min (y), size=circulated, color=<color_by>.
-    Adds optional reference lines at x_ref (e.g., 90%) and y_ref (e.g., 30 min).
-    """
     if df.empty:
         return None
 
@@ -190,11 +169,6 @@ def scatter_performance(df, color_by: str = "service", x_ref: float | None = 90.
     return fig
 
 def lorenz_late_share(df):
-    """
-    Lorenz-style curve of late arrivals by liaison:
-    - Sort liaisons by late_arr_count descending
-    - Plot cumulative share of late_arr_count vs cumulative share of liaisons
-    """
     if df.empty or "late_arr_count" not in df.columns:
         return None
 
@@ -212,19 +186,17 @@ def lorenz_late_share(df):
     fig.update_xaxes(title="Cumulative liaisons (%)", range=[0,100])
     fig.update_yaxes(title="Cumulative late arrivals (%)", range=[0,100])
 
-    # 45° equality line
+    # Line of equality
     fig.add_trace(go.Scatter(x=[0,100], y=[0,100], mode="lines", line=dict(dash="dot"), showlegend=False))
 
     return fig
 
-# === NEW: Heatmap month × cause ===========================================
 def heatmap_causes_month(pivot_df, title: str):
     if pivot_df.empty:
         return None
-    # long format for px.imshow or px.density_heatmap; we’ll use imshow for control
     mat = pivot_df.set_index("month").sort_index()
     fig = px.imshow(
-        mat.T,  # causes as rows
+        mat.T,
         aspect="auto",
         color_continuous_scale="Blues",
         title=title,
@@ -240,33 +212,28 @@ import plotly.express as px
 _CAUSE_COLORS = {
     "External": "#1f77b4",
     "Infrastructure": "#7fb3ff",
-    "Traffic": "#e45756",  # Note: Votre code original utilisait 'Traffic', j'utilise ça. Si c'est 'Traffic management', ajustez ici.
+    "Traffic": "#e45756",
     "Rolling stock": "#f1a6a5",
     "Station ops & reuse": "#2ca02c",
     "Passengers / PSH / connections": "#9be39b",
 }
 
 def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
-    """
-    Proper 100% stacked bar chart by attribute (service/duration).
-    Expects df_long with columns: [group, cause, pct] where pct in 0..100.
-    """
     if df_long is None or df_long.empty:
         return None
 
     df_plot = df_long.copy()
-    # Clamp & clean
     df_plot["pct"] = df_plot["pct"].fillna(0).clip(lower=0, upper=100)
 
-    # Utiliser le mapping de couleurs défini
-    color_map = {k: _CAUSE_COLORS.get(k, '#808080') for k in df_plot["cause"].unique()} # #808080 = gris par défaut
+    # Color mapping
+    color_map = {k: _CAUSE_COLORS.get(k, '#808080') for k in df_plot["cause"].unique()}
 
     if horizontal:
         fig = px.bar(
             df_plot,
             x="pct", y="group", color="cause",
             orientation="h", title=title, barmode="stack",
-            color_discrete_map=color_map, # Utiliser le mapping ici
+            color_discrete_map=color_map, 
         )
         fig.update_xaxes(range=[0, 100], ticksuffix=" %", title=None)
         fig.update_yaxes(title=None)
@@ -277,7 +244,7 @@ def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
             df_plot,
             x="group", y="pct", color="cause",
             title=title, barmode="stack",
-            color_discrete_map=color_map, # Utiliser le mapping ici
+            color_discrete_map=color_map,
         )
         fig.update_yaxes(range=[0, 100], ticksuffix=" %", title=None)
         fig.update_xaxes(title=None)
@@ -288,7 +255,7 @@ def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
         texttemplate=text_template,
         textposition="inside",
         insidetextanchor="middle",
-        hovertemplate=hover_template # Utiliser le template corrigé
+        hovertemplate=hover_template
     )
 
     fig.update_layout(
@@ -302,7 +269,6 @@ def stacked_100_by_attr(df_long, title: str, horizontal: bool = False):
     )
     return fig
 
-# === NEW: Grouped bars — severity share by cause ==========================
 def grouped_severity_by_cause(df_long, title: str):
     if df_long.empty:
         return None
@@ -312,7 +278,6 @@ def grouped_severity_by_cause(df_long, title: str):
     fig.update_xaxes(title=None)
     return fig
 
-# === NEW: Scatter with dominant cause =====================================
 def scatter_dominant_cause(df, title: str, x_ref: float = 90.0, y_ref: float = 30.0):
     if df.empty:
         return None

@@ -18,7 +18,6 @@ def duplicate_keys(df: pd.DataFrame) -> pd.DataFrame:
     return g[g["count"] > 1].sort_values("count", ascending=False)
 
 def bounds_issues(df: pd.DataFrame) -> pd.DataFrame:
-    """Check negatives, impossible percentages, non-positive durations."""
     if df.empty:
         return pd.DataFrame(columns=["row_id", "issue", "value"])
 
@@ -53,12 +52,6 @@ def bounds_issues(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(checks)
 
 def logical_consistency(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Business rules:
-      - late_over_60_count ≤ late_over_30_count ≤ late_over_15_count ≤ circulated
-      - late_arr_count ≤ circulated
-      - avg_delay_all ≤ avg_delay_delayed
-    """
     if df.empty:
         return pd.DataFrame(columns=["row_id", "rule", "details"])
 
@@ -95,14 +88,9 @@ def logical_consistency(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rules)
 
 def outlier_months(df: pd.DataFrame, method: str = "iqr", threshold: float = 1.5) -> pd.DataFrame:
-    """
-    Flag months with unusually low on-time % at the liaison-month level.
-    Returns rows: [date, liaison, on_time_pct, flag]
-    """
     if df.empty or "liaison" not in df.columns or "date" not in df.columns:
         return pd.DataFrame(columns=["date", "liaison", "on_time_pct", "flag"])
 
-    # compute on_time_pct per row robustly if not already provided
     d = df.copy()
     if "on_time_pct_row" not in d.columns:
         if {"circulated", "late_arr_count"}.issubset(d.columns):

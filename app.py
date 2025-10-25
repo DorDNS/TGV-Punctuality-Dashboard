@@ -11,14 +11,14 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Display logo directly inside the sidebar (works in all 1.36+ versions)
+# Logo in sidebar
 with st.sidebar:
     st.logo("assets/logo.png", icon_image="assets/logo.png")
 
-# --- Init session state
+# Initialize session state
 init_state()
 
-# --- Load data once and store in session (cleaned)
+# Load data
 if "df_clean" not in st.session_state:
     DATA_CSV = f"data/{constants.DATA_FILENAME}"
     PARQUET = f"data/{constants.CLEANED_PARQUET_FILENAME}"
@@ -44,7 +44,7 @@ if "df_clean" not in st.session_state:
             st.session_state["date_end"] = opts[-1]
 
 
-# --- Pages (hello-style)
+# Pages
 pg = st.navigation([
     st.Page("pages/01_Intro.py",               title="Intro & Context",    icon=":material/train:", default=True),
     st.Page("pages/02_Overview.py",            title="Overview",           icon=":material/analytics:"),

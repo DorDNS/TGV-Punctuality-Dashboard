@@ -18,13 +18,12 @@ from utils.viz import (
 
 st.set_page_config(page_title="Routes Compare", page_icon=":material/route:", layout="wide")
 
-# ---------- small helpers: narrative cards ----------
+# Helpers
 def card(title: str, body_md: str, icon: str = ":material/insights:"):
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
         st.markdown(body_md)
 
-# --- colored callouts (same spirit as Overview) ----------------------------
 def _tone_from(value: float | None, *, good: bool = True, lo: float | None = None, hi: float | None = None) -> str:
     """
     Heuristic: choose a tone depending on whether higher is good or bad.
@@ -49,12 +48,12 @@ def callout(tone: str, icon: str, text_md: str):
 def _pct(x: float | None) -> str:
     return "—" if x is None or (isinstance(x, float) and (math.isnan(x) or math.isinf(x))) else f"{x:.1f}%"
 
-# ---------- sidebar & header ----------
+# Sidebar
 routes_sidebar()
 st.markdown("# Routes Compare")
 st.caption("Compare punctuality and delay severity across TGV liaisons.")
 
-# ---------- load & filter ----------
+# Load & filter
 df = st.session_state.get("df_clean", None)
 if df is None or df.empty:
     st.error("Data not loaded.")
@@ -69,9 +68,7 @@ metric = st.session_state["metric"]
 treat_bi = bool(st.session_state.get("treat_bidirectional", False))
 color_by = st.session_state.get("color_by", "service")  # enforced to "service" or "duration_class" in sidebar
 
-# =====================================================
-# A) Top / Bottom rankings
-# =====================================================
+# Top & Bottom rankings
 st.subheader("Top & Bottom rankings")
 st.caption(
     "Identify the strongest and weakest liaisons for the **selected metric**. "
@@ -89,7 +86,7 @@ if not top_df.empty and not bottom_df.empty:
 else:
     st.warning("Not enough data to compute rankings.")
 
-# ---- dynamic local read for rankings (colored callout — rich prose) ------
+# Dynamic local read
 try:
     top_name  = str(top_df["rank_metric"].idxmax())
     top_value = float(top_df.loc[top_name, "rank_metric"])
@@ -119,7 +116,7 @@ elif metric == "Cancel rate %":
         f"**{bot_value:.1f}%**. Above **5%**, cancellations start to distort the customer experience; targeting those "
         f"routes first will likely yield visible gains."
     )
-else:  # Avg delay (delayed trains)
+else:  
     tone = "warning" if np.isfinite(bot_value) and bot_value >= 35 else "info"
     msg = (
         f"Considering **average delay when late**, **{top_name}** is most manageable (≈ **{top_value:.1f} min**), "
@@ -129,7 +126,7 @@ else:  # Avg delay (delayed trains)
 
 callout(tone, ":material/flag:", msg)
 
-# Narrative — Rankings
+# Narrative
 if treat_bi:
     card(
         title="What the rankings say (A↔B merged)",
@@ -160,9 +157,7 @@ Conversely, the **Bottom 10** shows routes that are often long or more complex, 
 
 st.divider()
 
-# =====================================================
-# B) Reliability vs Severity (scatter)
-# =====================================================
+# Reliability vs Severity scatter
 st.subheader("Reliability vs. severity")
 st.caption(
     "Each bubble is a liaison (or a bidirectional pair). **X** = on-time %, **Y** = average delay when late. "
@@ -179,7 +174,7 @@ if not summ.empty:
 else:
     st.info("No liaison summary could be computed for the current scope.")
 
-# ---- dynamic local read for scatter (rich prose) --------------------------
+# Dynamic local read
 on_col  = "on_time_pct" if "on_time_pct" in summ.columns else None
 sev_col = "avg_delay_arr_delayed_min" if "avg_delay_arr_delayed_min" in summ.columns else None
 
@@ -226,7 +221,7 @@ if good_share is not None:
         f"{extra}"
     )
 
-# Narrative — Scatter by active color_by
+# Narrative
 if not summ.empty:
     if color_by == "service":
         if treat_bi:
@@ -256,7 +251,7 @@ cross-network coordination and border effects. Here, the **service type** is a c
                     """
                 ),
             )
-    else:  # color_by == "duration_class"
+    else: 
         if treat_bi:
             card(
                 title="Reliability vs. severity — colored by duration class (A↔B merged)",
@@ -289,9 +284,7 @@ This gradient highlights a **near-linear relationship between operational comple
 
 st.divider()
 
-# =====================================================
-# C) Concentration curve (Lorenz)
-# =====================================================
+# Concentration of late arrivals
 st.subheader("Concentration of late arrivals")
 st.caption("How late arrivals distribute across liaisons. A bowed curve ⇒ **few routes drive most delays**.")
 
@@ -304,7 +297,7 @@ if not summ.empty:
 else:
     st.info("No liaison summary available for concentration curve.")
 
-# ---- dynamic local read for concentration (rich prose) --------------------
+# Dynamic local read
 share_20 = None
 weight_col = next((c for c in ["late_arr_count","late_arrivals","late_count","late_weight"] if c in summ.columns), None)
 
@@ -324,7 +317,7 @@ if weight_col:
             f"most of the improvement potential{', even after A↔B merging' if treat_bi else ''}."
         )
 
-# Narrative — Lorenz
+# Narrative
 if not summ.empty:
     if treat_bi:
         card(
@@ -354,9 +347,7 @@ This diagnosis justifies targeted policies: **taking action on the few problemat
 
 st.divider()
 
-# =====================================================
-# D) Delay distribution (boxplot)
-# =====================================================
+# Delay distribution
 st.subheader("Distribution of arrival delays (delayed trains)")
 st.caption("Boxplots by **duration class** quantify severity and outliers.")
 
@@ -366,7 +357,7 @@ if not dd.empty:
 else:
     st.info("No delay data to display.")
 
-# ---- dynamic local read for boxplots (rich prose) -------------------------
+# Dynamic local read
 if "duration_class" in dd.columns and "avg_delay_arr_delayed_min" in dd.columns:
     stats = (dd.groupby("duration_class")["avg_delay_arr_delayed_min"]
                .agg(median="median", p90=lambda s: s.quantile(0.90))
@@ -386,7 +377,7 @@ if "duration_class" in dd.columns and "avg_delay_arr_delayed_min" in dd.columns:
         f"events drives much of the perceived pain."
     )
 
-# Narrative — Boxplot
+# Narrative
 if not dd.empty:
     if treat_bi:
         card(
@@ -416,9 +407,7 @@ This statistical reading illustrates the **gradation of risks according to journ
             ),
         )
 
-# =====================================================
-# Closing synthesis
-# =====================================================
+# Synthesis
 st.divider()
 
 st.subheader("To conclude")

@@ -60,11 +60,10 @@ def _duration_class(mins: float | int) -> str:
     return "> 3h"
 
 def clean(df_raw: pd.DataFrame) -> pd.DataFrame:
-    # Rename columns to English snake_case
+    # Rename columns
     df = df_raw.rename(columns=FR_TO_EN).copy()
 
-    # Parse date as first day of month (period)
-    # Expected format 'YYYY-MM'
+    # Parse date as first day of month
     df["date"] = pd.to_datetime(df["date"], format="%Y-%m")
 
     # Coerce numeric columns
@@ -90,17 +89,14 @@ def clean(df_raw: pd.DataFrame) -> pd.DataFrame:
             np.nan
         )
 
-    # Optional composite reliability index (exploratory): punctuality not provided in the file,
-    # so we won't fabricate it; we only combine cancel_rate if needed later.
-
-    # Sanity checks flags (for Data Quality page later)
+    # Sanity checks flags
     df["check_late_chain_ok"] = (
         (df["late_over_60_count"].fillna(0) <= df["late_over_30_count"].fillna(0)) &
         (df["late_over_30_count"].fillna(0) <= df["late_over_15_count"].fillna(0)) &
         (df["late_over_15_count"].fillna(0) <= df["circulated"].fillna(0))
     )
 
-    # Bounds for cause percentages (0..100)
+    # Bounds for cause percentages
     cause_cols = [
         "pct_cause_external", "pct_cause_infra", "pct_cause_traffic",
         "pct_cause_rollingstock", "pct_cause_station_reuse", "pct_cause_passengers"
@@ -112,7 +108,6 @@ def clean(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def filter_values(df: pd.DataFrame) -> dict:
-    """Compute values for widgets: date bounds, services, stations, duration classes."""
     dates = pd.to_datetime(df["date"].dropna().unique())
     dates_sorted = sorted(dates)
     services = sorted([s for s in df["service"].dropna().unique()])

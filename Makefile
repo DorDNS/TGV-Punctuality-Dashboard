@@ -1,5 +1,3 @@
-# Makefile for tgv-punctuality-dashboard
-
 .PHONY: install setup data clean run help
 
 VENV_DIR = venv

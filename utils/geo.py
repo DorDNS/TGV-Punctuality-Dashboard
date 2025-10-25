@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import unicodedata
 
-# --- Name normalization (robust match: case-insensitive, remove accents/spaces) ---
 def _norm_name(s: str) -> str:
     if s is None:
         return ""
@@ -12,10 +11,6 @@ def _norm_name(s: str) -> str:
     return " ".join(s.upper().split())
 
 def load_station_lookup(path: str = "data/stations.csv") -> pd.DataFrame:
-    """
-    Read station coordinates (station, lat, lon). Return with a normalized key for joining.
-    Expected columns: station, lat, lon
-    """
     try:
         df = pd.read_csv(path)
     except FileNotFoundError:
@@ -23,9 +18,7 @@ def load_station_lookup(path: str = "data/stations.csv") -> pd.DataFrame:
     cols = {c.lower(): c for c in df.columns}
     need = {"station", "lat", "lon"}
     if not need.issubset(set(cols.keys()) | set(df.columns.str.lower())):
-        # Return empty with proper columns if file shape is wrong
         return pd.DataFrame(columns=["station", "lat", "lon", "key"])
-    # Standardize columns
     df = df.rename(columns={cols.get("station", "station"): "station",
                             cols.get("lat", "lat"): "lat",
                             cols.get("lon", "lon"): "lon"})
@@ -33,9 +26,6 @@ def load_station_lookup(path: str = "data/stations.csv") -> pd.DataFrame:
     return df[["station", "lat", "lon", "key"]]
 
 def attach_coords(df: pd.DataFrame, lut: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
-    """
-    Join coordinates for departure and arrival. Return (df_with_coords, missing_stations).
-    """
     if df.empty or lut.empty:
         return df.assign(dep_lat=np.nan, dep_lon=np.nan, arr_lat=np.nan, arr_lon=np.nan), []
 
@@ -56,12 +46,6 @@ def attach_coords(df: pd.DataFrame, lut: pd.DataFrame) -> tuple[pd.DataFrame, li
     return d, sorted(missing)
 
 def build_edges(df_filt: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregate to one row per liaison with coordinates and KPIs:
-    - source/target (lon/lat)
-    - on_time_pct, cancel_rate_pct, severe_15_count, circulated
-    - precomputed RGBA color and line width
-    """
     if df_filt.empty:
         return pd.DataFrame(columns=[
             "liaison", "dep_lon", "dep_lat", "arr_lon", "arr_lat",
@@ -90,19 +74,18 @@ def build_edges(df_filt: pd.DataFrame) -> pd.DataFrame:
     grp = grp.dropna(subset=["dep_lat", "dep_lon", "arr_lat", "arr_lon"])
 
     # Edge styling
-    # Color ramp: 0% -> red, 100% -> green (simple linear)
     def pct_to_rgba(p):
         if pd.isna(p):  # gray fallback
             return [150, 150, 150, 180]
         p = max(0, min(100, float(p)))
         r = int(round(255 * (100 - p) / 100))
-        g = int(round(180 + (75 * p / 100)))  # 180..255, avoids neon
-        b = int(round(80 * (100 - p) / 100))  # a bit of blue in low scores
+        g = int(round(180 + (75 * p / 100)))
+        b = int(round(80 * (100 - p) / 100))
         return [r, g, b, 180]
 
     grp["color"] = grp["on_time_pct"].map(pct_to_rgba)
 
-    # Width scaling: sqrt(circulated) in [2..12] px
+    # Width scaling
     if len(grp) > 0 and grp["circulated"].max() > 0:
         s = np.sqrt(grp["circulated"].clip(lower=0))
         grp["width"] = 2 + 10 * (s - s.min()) / (s.max() - s.min() + 1e-9)
@@ -116,12 +99,10 @@ def build_edges(df_filt: pd.DataFrame) -> pd.DataFrame:
         "color", "width"
     ]]
 
-# --- Distance helpers (vectorized great-circle) ----------------------------
 import numpy as np
-from math import radians, sin, cos, asin, sqrt  # kept if you need scalar later
+from math import radians, sin, cos, asin, sqrt
 
 def add_edge_distance_km(edges: pd.DataFrame) -> pd.DataFrame:
-    """Vectorized great-circle distance in km between dep and arr; adds 'distance_km'."""
     if edges is None or edges.empty:
         return edges
     e = edges.copy()
@@ -135,7 +116,7 @@ def add_edge_distance_km(edges: pd.DataFrame) -> pd.DataFrame:
     valid = lat1.notna() & lon1.notna() & lat2.notna() & lon2.notna()
     dist = np.full(len(e), np.nan, dtype=float)
     if valid.any():
-        r = 6371.0088  # Earth radius (km)
+        r = 6371.0088
         φ1 = np.radians(lat1[valid])
         φ2 = np.radians(lat2[valid])
         Δφ = np.radians((lat2 - lat1)[valid])
@@ -148,17 +129,12 @@ def add_edge_distance_km(edges: pd.DataFrame) -> pd.DataFrame:
     e["distance_km"] = dist
     return e
 
-# --- Station-level metrics --------------------------------------------------
 def station_metrics(df_with_coords: pd.DataFrame) -> pd.DataFrame:
-    """
-    Aggregate KPIs at station level (both as departure and arrival).
-    Returns columns: [station, lat, lon, circulated, late_arr_count, on_time_pct, late_rate_pct]
-    """
     if df_with_coords is None or df_with_coords.empty:
         return pd.DataFrame(columns=["station","lat","lon","circulated","late_arr_count",
                                      "on_time_pct","late_rate_pct"])
 
-    # Build long table of "events" pinned on a station (dep + arr)
+    # Build long format for dep & arr
     dep = df_with_coords.rename(columns={"departure":"station","dep_lat":"lat","dep_lon":"lon"}).copy()
     arr = df_with_coords.rename(columns={"arrival":"station","arr_lat":"lat","arr_lon":"lon"}).copy()
     keep = ["station","lat","lon","circulated","late_arr_count"]
@@ -172,16 +148,10 @@ def station_metrics(df_with_coords: pd.DataFrame) -> pd.DataFrame:
         late_arr_count=("late_arr_count","sum"),
     ).reset_index()
     g["late_rate_pct"] = np.where(g["circulated"]>0, g["late_arr_count"]/g["circulated"]*100.0, np.nan)
-    # Proxy on-time at station: 100 - late_rate (station-level)
     g["on_time_pct"] = 100.0 - g["late_rate_pct"]
     return g
 
-# --- Points for density layers (Hexagon) -----------------------------------
 def late_points_for_density(df_with_coords: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns per-record points duplicated on dep & arr with weights (= late_arr_count) for HexagonLayer.
-    Columns: [lat, lon, weight]
-    """
     if df_with_coords is None or df_with_coords.empty:
         return pd.DataFrame(columns=["lat","lon","weight"])
     dep = df_with_coords[["dep_lat","dep_lon","late_arr_count"]].rename(

@@ -13,14 +13,13 @@ from utils.quality import (
     outlier_months,
 )
 
-# ---------- Helpers ----------
+# Helpers
 def analysis_card(title: str, body_md: str, icon: str = ":material/analytics:"):
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
         st.markdown(body_md)
 
 def _normalize_missing_table(miss_raw: pd.DataFrame | None, n_rows: int) -> pd.DataFrame:
-    """Normalize output from missingness_table into a standard schema."""
     if miss_raw is None or (isinstance(miss_raw, pd.DataFrame) and miss_raw.empty):
         return pd.DataFrame(columns=["Column", "Missing %", "Missing count", "Non-null %"])
 
@@ -141,10 +140,10 @@ def _dq_score(n, miss_tbl, dup_df, bdf, ldf, odf) -> int:
             score -= min(cap, 100.0 * len(df_issues) / n)
     return max(0, int(round(score)))
 
-# ---------- Page ----------
+# Page
 st.set_page_config(page_title="Data Quality", page_icon=":material/award_star:", layout="wide")
 
-# Sidebar (filters + local options)
+# Sidebar
 dq_sidebar()
 with st.sidebar.expander("Data Quality options", expanded=False):
     show_samples = st.checkbox("Show sample rows in each tab", value=True)
@@ -167,7 +166,7 @@ if dff.empty:
     st.stop()
 
 month_str = _extract_month_col(dff)
-IQR_K = 1.5  # fixed outlier threshold (IQR method)
+IQR_K = 1.5 
 
 # Summary calculations
 n_rows, n_cols = dff.shape

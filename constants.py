@@ -1,13 +1,11 @@
-# Global constants for configuration, seeding, or sampling
-
-# Default filename for the main TGV punctuality data
+# Filename for the main data CSV
 DATA_FILENAME = "regularite-mensuelle-tgv-aqst.csv"
 
-# Filename for the station coordinates lookup
+# Filename for station lookup CSV
 STATIONS_FILENAME = "stations.csv"
 
-# Caching filename for cleaned data
+# Filename for cleaned data Parquet
 CLEANED_PARQUET_FILENAME = "tgv_punctualite_clean.parquet"
 
-# Random seed for consistent sampling (if implemented later)
+# Random seed for reproducibility
 RANDOM_SEED = 42

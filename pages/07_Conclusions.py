@@ -5,7 +5,6 @@ st.set_page_config(page_title="Conclusions", page_icon=":material/check_circle:"
 conclusions_sidebar()
 
 def analysis_card(title: str, body_md: str, icon: str = ":material/analytics:"):
-    """Creates a plain bordered container with an icon, bold title, and markdown body."""
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
         st.markdown(body_md)

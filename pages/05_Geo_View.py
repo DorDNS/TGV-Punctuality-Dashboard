@@ -16,17 +16,15 @@ from utils.geo import (
     late_points_for_density,
 )
 
-# --- helper: enable LOESS only if statsmodels is available -----------------
+# Helpers
 def _px_trendline_if_available():
     return "lowess" if find_spec("statsmodels") else None
 
-# --- helper pour cartes blanches d'analyse ---------------------------------
 def analysis_card(title: str, body_md: str, icon: str = ":material/analytics:"):
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
         st.markdown(body_md)
 
-# --- dynamic callouts ------------------------------------------------------
 def callout(tone: str, icon: str, text_md: str):
     box = getattr(st, tone, st.info)
     box(f"{icon}  {text_md}")
@@ -47,7 +45,7 @@ def _tone_delta(delta: float | None, *, good_when_down: bool,
             return "warning"
     return "info"
 
-# --- detect station-name columns or derive them from 'liaison' -------------
+# Detect station columns or parse 'liaison' column
 def _detect_station_cols_or_parse(edges: pd.DataFrame) -> tuple[pd.DataFrame, str | None, str | None]:
     if edges is None or edges.empty:
         return edges, None, None
@@ -86,16 +84,8 @@ def _detect_station_cols_or_parse(edges: pd.DataFrame) -> tuple[pd.DataFrame, st
     edges2["__arr_name__"] = parsed.map(lambda t: t[1])
     return edges2, "__dep_name__", "__arr_name__"
 
-# --- merge A->B & B->A into a single undirected edge -----------------------
+# Merge bidirectional edges
 def _merge_bidirectional_edges(edges: pd.DataFrame, lut: pd.DataFrame) -> pd.DataFrame:
-    """
-    Agrège les deux sens d'une liaison en une ligne:
-      - clé non orientée = (sta_min, sta_max)
-      - somme: circulated, severe_15_count
-      - moyenne pondérée (poids=circulated): on_time_pct, cancel_rate_pct
-      - coords depuis LUT pour (sta_min → dep, sta_max → arr)
-      - distance_km: laissé à NaN ici; recalculé ensuite par add_edge_distance_km
-    """
     if edges is None or edges.empty:
         return edges
 
@@ -149,7 +139,6 @@ def _merge_bidirectional_edges(edges: pd.DataFrame, lut: pd.DataFrame) -> pd.Dat
     g["__k_min__"] = g[[dep_col, arr_col]].min(axis=1).astype(str)
     g["__k_max__"] = g[[dep_col, arr_col]].max(axis=1).astype(str)
 
-    # silence FutureWarning + code clair
     merged = (
         g.groupby(["__k_min__", "__k_max__"], group_keys=False)
          .apply(lambda x: _row_from_group(x.drop(columns=["__k_min__", "__k_max__"], errors="ignore")))
@@ -157,7 +146,7 @@ def _merge_bidirectional_edges(edges: pd.DataFrame, lut: pd.DataFrame) -> pd.Dat
     )
     return merged
 
-# =================== PAGE ===================================================
+# Page
 st.set_page_config(page_title="Geo View", page_icon=":material/public:", layout="wide")
 
 # Sidebar
@@ -172,7 +161,7 @@ if df is None or df.empty:
     st.error("Data not loaded.")
     st.stop()
 
-# Apply filters (includes stations / A↔B if the user used them)
+# Apply filters
 dff = apply_overview_filters(df, st.session_state)
 if dff.empty:
     st.warning("No data for the selected filters.")
@@ -186,17 +175,15 @@ if missing:
     with st.expander("Missing coordinates for stations (not shown on the map)"):
         st.write(", ".join(sorted(set(missing))))
 
-# Aggregate to edges (one row per liaison with coords + KPIs)
+
 edges = build_edges(dff2)
 
-# Merge A↔B if requested
 if st.session_state.get("treat_bidirectional", False):
     edges = _merge_bidirectional_edges(edges, lut)
 
-# Recompute distances AFTER the merge
 edges = add_edge_distance_km(edges)
 
-# Station-level metrics (for hubs layer & bar charts)
+# Station-level metrics
 stations = station_metrics(dff2)
 
 # Points for density layers
@@ -206,12 +193,12 @@ if edges is None or edges.empty:
     st.info("No edges with coordinates to display. Add more stations to data/stations.csv.")
     st.stop()
 
-# ------------------ MAP TABS ------------------
+# Map tabs
 tab_map, tab_density, tab_hubs, tab_geo_perf = st.tabs(
     ["OD Arcs", "Late Density", "Hubs", "Geo ↔ Performance"]
 )
 
-# ===== Tab 1: OD Arcs ======================================================
+# OD arcs
 with tab_map:
     st.caption("Origin–destination arcs colored by on-time performance and sized by traffic.")
 
@@ -374,7 +361,7 @@ with tab_map:
     """
     )
 
-# ===== Tab 2: Late Density (Heatmap only, UNWEIGHTED) ======================
+# Late density
 with tab_density:
     st.caption("Heatmap of late-arrival intensity (unweighted), robust alternative to 3D hex.")
 
@@ -455,7 +442,7 @@ with tab_density:
         """
         )
 
-# ===== Tab 3: Hubs (station-level) =========================================
+# Hubs
 with tab_hubs:
     st.caption("Stations sized by number of distinct liaisons served; color = on-time (proxy).")
     if stations is None or stations.empty:
@@ -560,7 +547,7 @@ with tab_hubs:
             """
             )
 
-# ===== Tab 4: Geo ↔ Performance ===========================================
+# Geo vs Performance
 with tab_geo_perf:
     st.caption("Does geography matter? Explore distance vs. reliability and a risk table.")
 

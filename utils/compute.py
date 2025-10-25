@@ -9,7 +9,6 @@ def _between_ym(df: pd.DataFrame, start_ym: str, end_ym: str) -> pd.Series:
     return (df["date"] >= start) & (df["date"] <= end)
 
 def _normalize_pair_cols(df: pd.DataFrame) -> pd.DataFrame:
-    """Add normalized endpoints and a symmetric liaison key."""
     dep = df["departure"].astype(str)
     arr = df["arrival"].astype(str)
     left_first = (dep <= arr)
@@ -20,7 +19,6 @@ def _normalize_pair_cols(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def apply_overview_filters(df: pd.DataFrame, session) -> pd.DataFrame:
-    """Filter dataframe using page widgets; supports bidirectional & station filters."""
     mask = _between_ym(df, session["date_start"], session["date_end"])
     if session.get("service"):
         mask &= df["service"].isin(session["service"])
@@ -121,7 +119,6 @@ def liaison_ranking(df_filt: pd.DataFrame, metric: str, treat_bidirectional: boo
     }
     col = metric_map.get(metric, "on_time_pct")
 
-    # IMPORTANT: don't create a second 'liaison' column – just name the index
     g.index.name = "liaison"
 
     g = g.sort_values(col, ascending=(col != "on_time_pct"))
@@ -137,12 +134,6 @@ def delay_distribution(df_filt: pd.DataFrame) -> pd.DataFrame:
     return df_filt[["duration_class", "avg_delay_arr_delayed_min"]].dropna()
 
 def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: Optional[int] = None): # Use Optional
-    """
-    Weighted composition of delay causes.
-    We weight each row by late_arr_count to avoid tiny samples dominating.
-    breakdown = "Month" or "Liaison".
-    Returns a DataFrame in long format: [group, cause, pct], sorted for plotting if Liaison Top N.
-    """
     if df_filt.empty:
         return pd.DataFrame(columns=["group", "cause", "pct"])
 
@@ -164,21 +155,19 @@ def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: Optional[in
     # Group key
     if breakdown == "Month":
         df["_group"] = df["date"].dt.to_period("M").dt.to_timestamp()
-    else:  # "Liaison"
+    else:  
         df["_group"] = df["liaison"]
 
-    # --- Weighted mean per group: sum(pct * w) / sum(w)
+    # Weighted mean per group: sum(pct * w) / sum(w)
     weighted = df[cause_cols].multiply(df["_w"], axis=0)
     num = weighted.groupby(df["_group"]).sum()
     den = df.groupby("_group")["_w"].sum().replace(0, np.nan)
-    comp_wide = num.divide(den, axis=0) # Renamed to comp_wide temporarily
+    comp_wide = num.divide(den, axis=0) 
 
-    # Store volume for sorting later if needed
     liaison_volume = None
     if breakdown == "Liaison":
         liaison_volume = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
 
-    # Limit to Top N liaisons by circulated volume if needed
     if breakdown == "Liaison" and top_n is not None and liaison_volume is not None:
         keep = liaison_volume.index[:top_n]
         comp_wide = comp_wide.loc[comp_wide.index.intersection(keep)]
@@ -186,11 +175,9 @@ def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: Optional[in
         liaison_volume = liaison_volume.loc[keep]
 
 
-    # Tidy format
     comp = comp_wide.reset_index().rename(columns={"_group": "group"})
     comp = comp.melt(id_vars="group", var_name="cause", value_name="pct")
 
-    # Nicer labels
     label_map = {
         "pct_cause_external": "External",
         "pct_cause_infra": "Infrastructure",
@@ -201,28 +188,19 @@ def causes_composition(df_filt: pd.DataFrame, breakdown: str, top_n: Optional[in
     }
     comp["cause"] = comp["cause"].map(label_map).fillna(comp["cause"])
 
-    # --- AJOUTÉ : Trier par volume pour l'affichage des liaisons ---
     if breakdown == "Liaison" and liaison_volume is not None:
-        # Create a categorical type based on the volume sort order
-        # This tells Plotly how to order the y-axis
         ordered_liaisons = liaison_volume.index.tolist()
         comp['group'] = pd.Categorical(comp['group'], categories=ordered_liaisons, ordered=True)
-        # Sort the DataFrame itself (might help Plotly, doesn't hurt)
         comp = comp.sort_values('group')
-    # -----------------------------------------------------------------
 
     return comp
 
 def severe_counts(df_filt: pd.DataFrame, breakdown: str, bucket: str, top_n: int | None = None):
-    """
-    Sum severe delay counts by breakdown (Month/Liaison).
-    bucket in {"≥15","≥30","≥60"} maps to columns late_over_15_count, etc.
-    """
     if df_filt.empty:
         return pd.DataFrame(columns=["group", "count"])
 
     col_map = {"≥15": "late_over_15_count", "≥30": "late_over_30_count", "≥60": "late_over_60_count"}
-    col = col_map.get(bucket) # Use .get() for safety
+    col = col_map.get(bucket) 
 
     # Ensure the target column exists before proceeding
     if not col or col not in df_filt.columns:
@@ -232,13 +210,13 @@ def severe_counts(df_filt: pd.DataFrame, breakdown: str, bucket: str, top_n: int
     df = df_filt.copy()
     if breakdown == "Month":
         df["_group"] = df["date"].dt.to_period("M").dt.to_timestamp()
-    else: # Liaison
+    else: 
         df["_group"] = df["liaison"]
 
     # Perform the aggregation
     g = df.groupby("_group")[col].sum().reset_index().rename(columns={"_group": "group", col: "count"})
 
-    # Filter for Top N based on CIRCULATED volume (as originally intended for relevance)
+    # Filter for Top N 
     if breakdown == "Liaison" and top_n is not None:
         if "circulated" in df.columns:
             vol = df.groupby("_group")["circulated"].sum().sort_values(ascending=False)
@@ -246,24 +224,13 @@ def severe_counts(df_filt: pd.DataFrame, breakdown: str, bucket: str, top_n: int
             g = g[g["group"].isin(keep)]
         else:
              st.warning("Cannot determine Top N liaisons by volume: 'circulated' column missing.")
-             # Fallback: maybe sort by count instead? Or just take first N alphabetically? Let's sort by count.
              g = g.sort_values("count", ascending=False).head(top_n)
 
-
-    # --- AJOUTÉ : Trier le résultat final par 'count' décroissant ---
-    # This ensures the data passed to the plot has the highest count first
     g = g.sort_values("count", ascending=False)
-    # -----------------------------------------------------------------
 
     return g
 
 def liaison_summary(df_filt: pd.DataFrame, treat_bidirectional: bool = False) -> pd.DataFrame:
-    """
-    One row per liaison with core metrics for scatter/lorenz plots.
-    Returns columns:
-      ['liaison','service','duration_class','planned','canceled','circulated',
-       'late_arr_count','on_time_pct','cancel_rate_pct','late_rate_pct','avg_delay_arr_delayed_min']
-    """
     if df_filt.empty:
         return pd.DataFrame(columns=[
             "liaison","service","duration_class","planned","canceled","circulated","late_arr_count",
@@ -277,8 +244,7 @@ def liaison_summary(df_filt: pd.DataFrame, treat_bidirectional: bool = False) ->
         df = df_filt.copy()
         key = "liaison"
 
-    # Choose a "primary" label per liaison for color (service/duration_class)
-    # We'll take the most frequent service & duration_class across months.
+    # Helper for mode
     def _mode(s: pd.Series):
         return s.mode().iloc[0] if not s.mode().empty else None
 
@@ -311,9 +277,7 @@ def liaison_summary(df_filt: pd.DataFrame, treat_bidirectional: bool = False) ->
         "on_time_pct","cancel_rate_pct","late_rate_pct","avg_delay_arr_delayed_min"
     ]]
 
-# --- helpers for causes -----------------------------------------------------
 def _cause_cols_in(df):
-    """Return the list of existing cause % columns in df, preserving order."""
     candidates = [
         "pct_cause_external", "pct_cause_infra", "pct_cause_traffic",
         "pct_cause_rollingstock", "pct_cause_station_reuse", "pct_cause_passengers"
@@ -329,11 +293,7 @@ _CAUSE_LABELS = {
     "pct_cause_passengers": "Passengers / PSH / connections",
 }
 
-# === NEW: Causes × Month heatmap (weighted %) =============================
 def causes_pivot_monthly(df_filt: pd.DataFrame) -> pd.DataFrame:
-    """
-    Monthly weighted cause composition (rows=month, cols=cause, values=%).
-    """
     import numpy as np
     import pandas as pd
 
@@ -364,13 +324,6 @@ def causes_pivot_monthly(df_filt: pd.DataFrame) -> pd.DataFrame:
 
 
 def causes_by_attr(df_filt: pd.DataFrame, attr: str) -> pd.DataFrame:
-    """
-    Weighted cause composition by attribute (service or duration_class) in tidy/long format.
-    - Weights = late_arr_count
-    - Inputs are % per cause columns (0–100); we compute a weighted mean per group
-    - We then renormalize row-wise to ensure each group's shares sum to 100 even with missing cols.
-    Returns: columns [group, cause, pct] with pct in [0,100].
-    """
     import numpy as np
     import pandas as pd
 
@@ -394,27 +347,18 @@ def causes_by_attr(df_filt: pd.DataFrame, attr: str) -> pd.DataFrame:
     # Weighted mean in %
     comp = num.divide(den, axis=0)
 
-    # Safety re-normalization row-wise (some groups may miss columns)
     row_sum = comp.sum(axis=1).replace(0, np.nan)
     comp = comp.divide(row_sum, axis=0).multiply(100)
 
-    # Tidy
     comp = comp.reset_index().rename(columns={attr: "group"})
     comp = comp.melt(id_vars="group", var_name="cause", value_name="pct")
     comp["cause"] = comp["cause"].map(_CAUSE_LABELS).fillna(comp["cause"])
     comp["pct"] = comp["pct"].fillna(0)
 
-    # Preserve group order (nice for service, duration)
     comp["group"] = comp["group"].astype("category")
     return comp
 
-# === NEW: Severity profile by cause (buckets) ==============================
 def severity_profile_by_cause(df_filt: pd.DataFrame) -> pd.DataFrame:
-    """
-    Returns % share of severe buckets per cause (weighted by late_arr_count).
-    Output long format: [cause, bucket, pct]
-    Assumes columns: pct_cause_* and late_over_{15,30,60}_count present (when available).
-    """
     if df_filt.empty:
         return pd.DataFrame(columns=["cause", "bucket", "pct"])
 
@@ -435,7 +379,7 @@ def severity_profile_by_cause(df_filt: pd.DataFrame) -> pd.DataFrame:
         "pct_cause_passengers": "Passengers / PSH / connections",
     }
 
-    # Severity buckets (use what exists)
+    # Severity buckets
     candidates = {
         "≥15": "late_over_15_count",
         "≥30": "late_over_30_count",
@@ -449,7 +393,6 @@ def severity_profile_by_cause(df_filt: pd.DataFrame) -> pd.DataFrame:
     # Weighted contribution of each cause to each bucket:
     out = []
     for b_name, b_col in buckets.items():
-        # For each cause, proxy contribution = sum( (pct_cause_x * bucket_count) )
         for c in cause_cols:
             num = (df[c].fillna(0).astype(float) * df[b_col].fillna(0).astype(float)).sum()
             den = df[b_col].fillna(0).sum()
@@ -458,12 +401,7 @@ def severity_profile_by_cause(df_filt: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame(out)
 
-
-# === NEW: Dominant-cause scatter summary per liaison =======================
 def liaison_cause_dominance_summary(df_filt: pd.DataFrame, treat_bidirectional: bool = True) -> pd.DataFrame:
-    """
-    Summarises per liaison: on_time_pct, avg_delay_arr_delayed_min, late_arr_count, dominant cause.
-    """
     if df_filt.empty:
         return pd.DataFrame()
 
@@ -488,7 +426,7 @@ def liaison_cause_dominance_summary(df_filt: pd.DataFrame, treat_bidirectional: 
     )
     g["on_time_pct"] = np.where(g["circulated"]>0,(g["circulated"]-g["late"])/g["circulated"]*100.0,np.nan)
 
-    # Dominant cause (weighted by late arrivals)
+    # Dominant cause
     cause_cols = [c for c in [
         "pct_cause_external","pct_cause_infra","pct_cause_traffic",
         "pct_cause_rollingstock","pct_cause_station_reuse","pct_cause_passengers"

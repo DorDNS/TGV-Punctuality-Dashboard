@@ -22,13 +22,12 @@ from utils.viz import (
 
 st.set_page_config(page_title="Causes & Severity", page_icon=":material/stacked_bar_chart:", layout="wide")
 
-# helper: info card
+# Helpers
 def card(title: str, body_md: str, icon: str = ":material/insights:"):
     with st.container(border=True):
         st.markdown(f"{icon} **{title}**")
         st.markdown(body_md)
 
-# colored callout box
 def callout(tone: str, icon: str, text_md: str):
     box = getattr(st, tone, st.info)
     box(f"{icon}  {text_md}")
@@ -165,7 +164,6 @@ else:
 
 try:
     if not pivot.empty:
-        # find the (cause, month) cell with the highest share
         tidy = pivot.reset_index().melt(id_vars="date", var_name="cause", value_name="share")
         tidy = tidy.dropna(subset=["share"])
         if not tidy.empty:
@@ -216,7 +214,6 @@ with c2:
                         use_container_width=True)
 
 try:
-    # Build quick contrasts on External / Rolling stock between >3h and <1h30
     if not comp_duration.empty and "group" in comp_duration and "pct" in comp_duration:
         w = comp_duration.pivot_table(index="group", columns="cause", values="pct", aggfunc="mean")
         if ("> 3h" in w.index) and ("< 1h30" in w.index):
@@ -264,7 +261,6 @@ else:
 
 try:
     if not sev_profile.empty and {"bucket","cause","pct"}.issubset(sev_profile.columns):
-        # find dominant cause within ≥60 bucket
         tail = sev_profile[sev_profile["bucket"] == "≥60"]
         if not tail.empty:
             r = tail.sort_values("pct", ascending=False).iloc[0]
@@ -305,7 +301,6 @@ else:
 
 try:
     if not sev.empty and "group" in sev and "count" in sev:
-        # If monthly: groups are datetimes; else counts by liaison
         s = sev.sort_values("group")
         if s["group"].dtype.kind in ("M",): 
             last12 = s["count"].tail(12).sum()
@@ -354,8 +349,6 @@ else:
 try:
     if dom is not None and not dom.empty:
         cols = set(dom.columns)
-
-        # Accept either naming
         ycol = None
         for c in ("avg_arr_delay_delayed", "avg_delay_arr_delayed_min"):
             if c in cols:
@@ -368,7 +361,6 @@ try:
                 count_col = c
                 break
 
-        # Require on-time and ycol
         if "on_time_pct" in cols and ycol is not None and count_col is not None:
             dfq = dom[["on_time_pct", ycol, count_col]].dropna()
             if not dfq.empty:
