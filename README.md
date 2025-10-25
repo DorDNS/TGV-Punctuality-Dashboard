@@ -51,3 +51,6 @@ The dashboard is deployed and accessible [here](https://tgv-punctuality-dashboar
 
 ## 🎥 Demonstration Video
 A demonstration video of the dashboard can be found [here](https://youtu.be/HSyHO0TIMgg).
+
+## 🔗 GitHub Repository Link
+You can find the source code for this project on GitHub: [TGV Punctuality Dashboard](https://github.com/DorDNS/TGV-Punctuality-Dashboard)
