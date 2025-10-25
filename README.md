@@ -46,5 +46,8 @@ This project uses a `Makefile` to simplify common tasks:
 └── utils/            # Helper Python modules (compute, prep, viz, etc.)
 ```
 
+## 🌐 Deployed Application
+The dashboard is deployed and accessible [here](https://tgv-punctuality-dashboard.streamlit.app/).
+
 ## 🎥 Demonstration Video
 A demonstration video of the dashboard can be found [here](https://youtu.be/HSyHO0TIMgg).
