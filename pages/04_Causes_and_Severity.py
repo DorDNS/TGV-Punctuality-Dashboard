@@ -215,7 +215,7 @@ with c2:
 
 try:
     if not comp_duration.empty and "group" in comp_duration and "pct" in comp_duration:
-        w = comp_duration.pivot_table(index="group", columns="cause", values="pct", aggfunc="mean")
+        w = comp_duration.pivot_table(index="group", columns="cause", values="pct", aggfunc="mean", observed=False)
         if ("> 3h" in w.index) and ("< 1h30" in w.index):
             for cause in ["External", "Rolling stock"]:
                 if cause in w.columns:

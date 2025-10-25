@@ -293,7 +293,7 @@ if not ds.empty:
     read12 = (
         ds.dropna(subset=["on_time_pct"])
           .groupby("duration_class", sort=False)
-          .apply(lambda g: g.tail(12)["on_time_pct"].mean() if len(g) >= 12 else np.nan)
+          .apply(lambda g: g.tail(12)["on_time_pct"].mean() if len(g) >= 12 else np.nan, include_groups=False)
           .rename("avg12")
           .reset_index()
     )

@@ -141,7 +141,7 @@ def _merge_bidirectional_edges(edges: pd.DataFrame, lut: pd.DataFrame) -> pd.Dat
 
     merged = (
         g.groupby(["__k_min__", "__k_max__"], group_keys=False)
-         .apply(lambda x: _row_from_group(x.drop(columns=["__k_min__", "__k_max__"], errors="ignore")))
+         .apply(lambda x: _row_from_group(x.drop(columns=["__k_min__", "__k_max__"], errors="ignore")), include_groups=False)
          .reset_index(drop=True)
     )
     return merged
