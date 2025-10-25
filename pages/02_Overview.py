@@ -140,9 +140,9 @@ if pd.notna(k_cancel):
 # Delay level narrative
 if pd.notna(k_delay):
     if k_delay >= 40:
-        kpi_bits.append(f"When late, trains arrive **~{k_delay:.1f} minutes** behind—**material impact** on passengers.")
+        kpi_bits.append(f"When late, trains arrive **~{k_delay:.1f} minutes** behind: **material impact** on passengers.")
     elif 30 <= k_delay < 40:
-        kpi_bits.append(f"When late, delays average **{k_delay:.1f} minutes**—**non-trivial** for travellers.")
+        kpi_bits.append(f"When late, delays average **{k_delay:.1f} minutes**: **non-trivial** for travellers.")
     else:
         kpi_bits.append(f"When late, delays average **{k_delay:.1f} minutes**, relatively contained.")
 
@@ -325,7 +325,7 @@ if not ds.empty:
         if gap12 >= 2.0:
             bits.append(
                 f"Over the **last 12 months**, **{best12['duration_class']}** leads ({best12['avg12']:.1f}%), "
-                f"while **{worst12['duration_class']}** trails ({worst12['avg12']:.1f}%) — a **{gap12:.1f} pp** structural gap."
+                f"while **{worst12['duration_class']}** trails ({worst12['avg12']:.1f}%): a **{gap12:.1f} pp** structural gap."
             )
         else:
             bits.append("Over the **last 12 months**, classes are broadly aligned with only minor differences.")

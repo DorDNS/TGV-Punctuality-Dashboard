@@ -74,7 +74,7 @@ with c3:
         
         Geographically, the **Geo View** "Late Density" map identified a primary hotspot:
         the **Paris hub**. Paris Lyon station, in particular, is the network's critical node,
-        serving 25 distinct liaisons—more than double the next-closest hub.
+        serving 25 distinct liaisons: more than double the next-closest hub.
         """
     )
 
@@ -193,7 +193,7 @@ st.divider()
 st.success(
     """
     **Final Thought:** The TGV network's performance is a complex system, but its
-    weaknesses are not random. They are structural, concentrated, and—most importantly—
+    weaknesses are not random. They are structural, concentrated, and, most importantly,
     identifiable. By focusing on the specific corridors and root causes highlighted in this
     dashboard, targeted improvements can be made to enhance reliability for millions of passengers.
     """

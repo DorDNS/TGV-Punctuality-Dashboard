@@ -93,10 +93,10 @@ def _dq_bounds_info_md() -> str:
     return """
 **Bounds checked** (hard limits on numeric values):
 
-- **Counts ≥ 0 (integers)** — scheduled circulations, canceled trains, delayed departures/arrivals, and delay buckets (≥15 / ≥30 / ≥60 min).
-- **Percentages in [0, 100]** — all *delay cause percentage* columns, plus `on_time_pct` and `cancel_rate_pct` when present.
-- **Durations / delays ≥ 0 minutes** — mean delay columns (for all trains and for delayed trains, departure and arrival).
-- **Distances ≥ 0 km** — `distance_km` when present.
+- **Counts ≥ 0 (integers)**: scheduled circulations, canceled trains, delayed departures/arrivals, and delay buckets (≥15 / ≥30 / ≥60 min).
+- **Percentages in [0, 100]**: all *delay cause percentage* columns, plus `on_time_pct` and `cancel_rate_pct` when present.
+- **Durations / delays ≥ 0 minutes**: mean delay columns (for all trains and for delayed trains, departure and arrival).
+- **Distances ≥ 0 km**: `distance_km` when present.
 """
 
 def _dq_logical_info_md() -> str:
@@ -248,7 +248,7 @@ with tab1:
             title="Missing data patterns",
             icon=":material/indeterminate_question_box:",
             body_md="""
-        From these views, the gaps are very clear. The three free-text comment fields are almost always empty (two at 100% missing and arrival comments ~93%), so they add little value today. Most core metrics (service, duration, counts, cause percents) are complete, with only a tiny hole in `cancel_rate_pct` (~0.7%). The heatmap shows a few columns that are missing for every month—`canceled`, `late_depart_count`, `avg_delay_dep_all_min`, and `late_arr_count`—which likely means those fields were never populated or were renamed upstream. We also see time-pattern gaps: `late_over_15_count` has missing data early on and then becomes complete, and `circulated` has a small patch of missing values around 2019.
+        From these views, the gaps are very clear. The three free-text comment fields are almost always empty (two at 100% missing and arrival comments ~93%), so they add little value today. Most core metrics (service, duration, counts, cause percents) are complete, with only a tiny hole in `cancel_rate_pct` (~0.7%). The heatmap shows a few columns that are missing for every month (`canceled`, `late_depart_count`, `avg_delay_dep_all_min`, and `late_arr_count`) which likely means those fields were never populated or were renamed upstream. We also see time-pattern gaps: `late_over_15_count` has missing data early on and then becomes complete, and `circulated` has a small patch of missing values around 2019.
         """
         )
 
@@ -326,7 +326,7 @@ with tab4:
             title="Logical rules analysis",
             icon=":material/cognition:",
             body_md="""
-        This table shows that most logical rule violations come from a single condition: the average delay of all trains being greater than the average delay among delayed trains. There are 83 cases of this, meaning that for some routes or months, the mean delay value was computed incorrectly or includes rounding or aggregation errors. In theory, the average of all trains should always be lower since it includes many on-time trains with zero delay. Only four other violations appear—two where the number of trains delayed over 15 minutes exceeds the total number of circulated trains, and two where the hierarchy between ≥30 and ≥15-minute delays is broken. These isolated cases might come from data entry mistakes or mismatched counts during merges. Overall, the logical checks reveal that numerical relationships are mostly consistent, but the computation of average delays deserves attention, as it systematically breaks an expected rule and likely points to an upstream calculation or unit handling issue.
+        This table shows that most logical rule violations come from a single condition: the average delay of all trains being greater than the average delay among delayed trains. There are 83 cases of this, meaning that for some routes or months, the mean delay value was computed incorrectly or includes rounding or aggregation errors. In theory, the average of all trains should always be lower since it includes many on-time trains with zero delay. Only four other violations appear: two where the number of trains delayed over 15 minutes exceeds the total number of circulated trains, and two where the hierarchy between ≥30 and ≥15-minute delays is broken. These isolated cases might come from data entry mistakes or mismatched counts during merges. Overall, the logical checks reveal that numerical relationships are mostly consistent, but the computation of average delays deserves attention, as it systematically breaks an expected rule and likely points to an upstream calculation or unit handling issue.
         """
         )
 

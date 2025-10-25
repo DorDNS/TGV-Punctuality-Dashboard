@@ -192,7 +192,7 @@ if color_by == "service" and on_col and sev_col:
         n_on, n_sev = comp.loc["National", ["med_on","med_sev"]]
         i_on, i_sev = comp.loc["International", ["med_on","med_sev"]]
         extra = (
-            f" Median profile — **National**: ~**{n_on:.0f}%** on-time, **{n_sev:.0f} min**; "
+            f" Median profile: **National**: ~**{n_on:.0f}%** on-time, **{n_sev:.0f} min**; "
             f"**International**: ~**{i_on:.0f}%**, **{i_sev:.0f} min**. "
             f"{'The gap narrows once A↔B are merged.' if treat_bi else 'The split is clearer when directions are separated.'}"
         )
@@ -207,7 +207,7 @@ elif color_by == "duration_class" and on_col and sev_col:
     long_on  = comp.get("med_on", {}).get("> 3h", np.nan)
     long_se  = comp.get("med_sev", {}).get("> 3h", np.nan)
     extra = (
-        f" Median by distance — **<1h30**: ~**{short_on:.0f}%**, **{short_se:.0f} min**; "
+        f" Median by distance: **<1h30**: ~**{short_on:.0f}%**, **{short_se:.0f} min**; "
         f"**1h30–3h**: ~**{mid_on:.0f}%**, **{mid_se:.0f} min**; **>3h**: ~**{long_on:.0f}%**, **{long_se:.0f} min**. "
         f"Severity scales with distance, which remains the most powerful discriminator."
     )

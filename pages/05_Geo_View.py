@@ -355,7 +355,7 @@ with tab_map:
         body_md="""
     This map displays the 130 main TGV routes, with colors and line thickness providing a clear snapshot of punctuality and traffic levels. Each arc links two destinations: the color reflects how close the route is to the **90 % on-time target** (red = below, yellow = around, green = above), while the line width represents how many trains circulate on that corridor. The network’s overall on-time rate is **85.7 %**, below the target, and the **weakest corridor is ITALIE → PARIS LYON (67.7 %)**.
 
-    Most lines radiate from Paris, confirming its role as the heart of the TGV network. The thickest arcs — such as **Paris–Lyon**, **Paris–Marseille**, and **Paris–Bordeaux** — handle the highest traffic but also experience more frequent delays, visible through orange and red shades. By contrast, thinner international links toward **London**, **Zurich**, or **Milan** often show lighter tones, indicating steadier performance.
+    Most lines radiate from Paris, confirming its role as the heart of the TGV network. The thickest arcs, such as **Paris–Lyon**, **Paris–Marseille**, and **Paris–Bordeaux**, handle the highest traffic but also experience more frequent delays, visible through orange and red shades. By contrast, thinner international links toward **London**, **Zurich**, or **Milan** often show lighter tones, indicating steadier performance.
 
     Overall, the map highlights a clear pattern: the busiest corridors tend to be the least punctual, while peripheral routes maintain better reliability. It underlines how the strong concentration of traffic around Paris amplifies delay risks across the French high-speed network.
     """
@@ -543,7 +543,7 @@ with tab_hubs:
 
             This hierarchy reveals the **strong concentration of connections around Paris**, where multiple departure stations distribute flows to every region. While this structure enhances accessibility and central coordination, it also exposes the network to congestion effects and punctuality challenges.
 
-            Overall, the visualization offers a structural view of how the French high-speed network is organized: **a star-shaped system centered on Paris**, supported by a few key regional relays (Lyon, Marseille, Lille, Bordeaux). It shows how connectivity and performance are closely linked — the most connected stations drive the system’s efficiency but also bear its greatest operational pressure.
+            Overall, the visualization offers a structural view of how the French high-speed network is organized: **a star-shaped system centered on Paris**, supported by a few key regional relays (Lyon, Marseille, Lille, Bordeaux). It shows how connectivity and performance are closely linked: the most connected stations drive the system’s efficiency but also bear its greatest operational pressure.
             """
             )
 

@@ -123,7 +123,7 @@ try:
 
         if s_last12 is not None:
             top_cause, top_share = s_last12.index[0], float(s_last12.iloc[0])
-            msg = f"**Last 12 months** — dominant cause: **{top_cause}** (**{top_share*100:.0f}%** of late-arrival share)."
+            msg = f"**Last 12 months**: dominant cause: **{top_cause}** (**{top_share*100:.0f}%** of late-arrival share)."
             if s_prev12 is not None and top_cause in s_prev12.index:
                 delta = float(s_last12[top_cause] - s_prev12[top_cause])
                 tone = _tone_delta(delta, good_when_down=False, hi=0.03, lo=-0.03)
@@ -173,7 +173,7 @@ try:
             callout(
                 tone,
                 ":material/trending_up:",
-                f"**Seasonal spike** — **{row['cause']}** peaked around **{row['date']:%b %Y}** "
+                f"**Seasonal spike**: **{row['cause']}** peaked around **{row['date']:%b %Y}** "
                 f"(~**{row['share']*100:.0f}%** of the monthly mix)."
             )
 except Exception:
@@ -280,7 +280,7 @@ card(
 This visualisation answers a key question: *what causes the longest delays?*
 We can see that the categories **External**, **Infrastructure** and **Traffic** top each severity level, with almost identical shares for the three thresholds (≥15, ≥30, ≥60 min).
 This suggests that these causes are distinguished not only by their frequency but also by their **ability to generate significant delays**, which are often correlated: an infrastructure failure can cause a chain reaction of congestion and diversions.
-Conversely, the causes *Station ops & reuse* and *Passengers/Connections* appear infrequently in the most severe delays — their impact remains localised and limited in time.
+Conversely, the causes *Station ops & reuse* and *Passengers/Connections* appear infrequently in the most severe delays: their impact remains localised and limited in time.
 This graph therefore allows priorities to be ranked: the main levers for reducing **serious delays** lie primarily in **infrastructure resilience and traffic management**.
 """
 )
@@ -384,7 +384,7 @@ card(
 Finally, the scatter plot links **reliability (punctuality rate)** and **average severity of delays**, colouring each connection according to its dominant cause.
 The trends are clear:
 
-* Connections dominated by **traffic (red)** are concentrated in the most fragile area — **low punctuality (< 85%) and high delays (> 35 min)**.
+* Connections dominated by **traffic (red)** are concentrated in the most fragile area: **low punctuality (< 85%) and high delays (> 35 min)**.
 * Connections linked to **infrastructure (light blue)** or **rolling stock (dark blue)** show moderate dispersion but significant average delays (~30 min), typical of occasional but serious breakdowns.
 * Finally, a few connections with **external causes** appear to be highly variable, with some performing very well and others being severely affected.
   
