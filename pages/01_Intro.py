@@ -9,7 +9,7 @@ intro_sidebar()
 
 st.write("# Introduction & Context")
 
-# ---- Hook: EFREI TC & why trains
+# Hook
 left, right = st.columns([3, 1], vertical_alignment="center")
 with left:
     st.markdown(
@@ -30,7 +30,7 @@ with right:
 
 st.divider()
 
-# ---- Quick context
+# Quick context
 st.subheader("Context")
 st.markdown(
     """
@@ -40,7 +40,7 @@ with a focus on three journey duration classes: `< 1h30`, `1h30–3h`, `> 3h`.
 """
 )
 
-# ---- Objectives
+# Objectives
 st.subheader("Objectives")
 st.markdown(
     """
@@ -51,7 +51,25 @@ st.markdown(
 """
 )
 
-# ---- Data caveats & scope
+# Audience & Key Takeaways
+st.subheader("Audience & Key Takeaways")
+st.markdown(
+    """
+This dashboard is intended for **data analysts, transport planners, and public transport enthusiasts**
+(like my EFREI TC colleagues) interested in the operational realities of a high-speed rail network.
+
+**The key takeaways are:**
+- **Performance is not uniform:** A single "on-time" number hides vast differences between routes.
+- **Complexity is a key driver:** Long-distance, international, and cross-country routes face structural challenges
+  that shorter, high-frequency routes do not.
+- **The "Why" matters:** `Infrastructure` and `Traffic Management` are often the dominant causes of delays,
+  not passenger-related issues.
+- **Problems are concentrated:** A small number of routes and hubs (especially Paris)
+  can be responsible for a disproportionate share of network-wide delays.
+"""
+)
+
+# Data caveats & scope
 st.subheader("Data caveats & scope")
 st.warning(
     "**Do not recompute a single 'global TGV punctuality' here.** "
@@ -67,7 +85,7 @@ st.markdown(
 """
 )
 
-# ---- Narrative roadmap
+# Narrative roadmap
 st.subheader("How to read this dashboard")
 st.markdown(
     """
@@ -79,24 +97,22 @@ st.markdown(
 """
 )
 
-# ---- Understanding the visuals (same design language as other pages)
+# Understanding the visuals (same design language as other pages)
 st.markdown("### Understanding the visuals")
 
-# Colored box — dynamic analysis (uses Streamlit status box like your callouts)
+# Colored box
 st.success(
     """
-:material/auto_graph: **Colored boxes and charts = dynamic analysis.**  
-These elements **react to your selections** in the sidebar (date range, service, duration class, A↔B merge…).  
+:material/auto_graph: **Colored boxes and charts = dynamic analysis.** These elements **react to your selections** in the sidebar (date range, service, duration class, A↔B merge…).  
 What you see is the **live view** of the filtered data. Change a filter, and they **update instantly**.
 """
 )
 
-# Plain bordered card — baseline narrative (same visual spirit as your analysis cards)
+# Plain bordered card
 with st.container(border=True):
     st.markdown(
         """
-:material/description: **Plain, bordered cards = baseline narratives.**  
-These summaries are written from the **default results** (no custom filters applied).  
+:material/description: **Plain, bordered cards = baseline narratives.** These summaries are written from the **default results** (no custom filters applied).  
 They provide a **stable reference** for interpretation, so you can compare your dynamic view
 to the **unchanged baseline** shown in these neutral cards.
         """
@@ -104,7 +120,6 @@ to the **unchanged baseline** shown in these neutral cards.
 
 st.divider()
 
-# ---- Small “how to use” card
 st.subheader("Tips")
 st.markdown(
     """
@@ -114,7 +129,7 @@ st.markdown(
 """
 )
 
-# show current data coverage if available
+# show current data coverage
 opts = st.session_state.get("filters_catalog", {}).get("date_options", [])
 if opts:
-    st.caption(f"Data coverage: **{opts[0]} → {opts[-1]}** (monthly).")
+    st.caption(f"Data coverage: **{opts[0]} → {opts[1]}** (monthly).")

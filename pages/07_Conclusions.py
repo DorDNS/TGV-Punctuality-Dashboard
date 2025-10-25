@@ -113,7 +113,27 @@ These insights lead to a clear diagnosis of the network:
 
 st.divider()
 
-# Next steps
+# Limitations
+st.subheader("Limitations & Known Issues")
+st.markdown("For full transparency, the following limitations should be considered when interpreting these results:")
+
+analysis_card(
+    icon=":material/warning:",
+    title="Data Scope, Quality, and Proxies",
+    body_md="""
+- **Scope:** This analysis is at the **liaison-month level**. As noted in the **Intro**, the KPIs here (like on-time %) cannot be re-aggregated to calculate a single "global TGV punctuality" figure, as official KPIs use unique train IDs which are not present in this dataset.
+
+- **Logical Inconsistency:** The **Data Quality** page revealed a recurring issue where `avg_delay_all_min > avg_delay_arr_delayed_min`. This suggests an upstream data calculation error and means that "Average arrival delay" metrics should be treated with caution.
+
+- **Missing Data:**
+    - **Historical:** Several core metrics (like `late_arr_count` and `late_over_15_count`) have missing data for older periods, as seen in the "Missingness" tab of the **Data Quality** page.
+    - **Contextual:** All free-text comment fields are >93% empty and provide no qualitative insight.
+"""
+)
+
+st.divider()
+
+# Next Steps
 st.subheader("Recommendations & Next Steps")
 
 st.markdown(
